@@ -47,6 +47,7 @@ const Index = () => {
   const handleAddHistory = (values: {
     applicationId: string;
     grossValue: number;
+    netValue: number;
     date: Date;
   }) => {
     const newHistoryEntry: HistoryEntry = {
@@ -96,6 +97,9 @@ const Index = () => {
                             <TableHead className="text-right">
                               Valor Bruto
                             </TableHead>
+                            <TableHead className="text-right">
+                              Valor Líquido
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -108,11 +112,14 @@ const Index = () => {
                                 <TableCell className="text-right">
                                   R$ {h.grossValue.toFixed(2)}
                                 </TableCell>
+                                <TableCell className="text-right">
+                                  R$ {h.netValue.toFixed(2)}
+                                </TableCell>
                               </TableRow>
                             ))
                           ) : (
                             <TableRow>
-                              <TableCell colSpan={2} className="text-center">
+                              <TableCell colSpan={3} className="text-center">
                                 Nenhum registro.
                               </TableCell>
                             </TableRow>

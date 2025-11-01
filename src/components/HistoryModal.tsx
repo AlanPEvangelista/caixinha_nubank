@@ -35,6 +35,9 @@ const formSchema = z.object({
   grossValue: z.coerce.number().positive({
     message: "O valor bruto deve ser positivo.",
   }),
+  netValue: z.coerce.number().positive({
+    message: "O valor líquido deve ser positivo.",
+  }),
   date: z.date({
     required_error: "A data é obrigatória.",
   }),
@@ -51,6 +54,7 @@ export function HistoryModal({ applicationId, onSubmit }: HistoryModalProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       grossValue: 0,
+      netValue: 0,
       date: new Date(),
     },
   });
@@ -83,6 +87,19 @@ export function HistoryModal({ applicationId, onSubmit }: HistoryModalProps) {
                   <FormLabel>Valor Bruto (R$)</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="1050.00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="netValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor Líquido (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="1025.00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

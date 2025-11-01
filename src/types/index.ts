@@ -10,4 +10,5 @@ export interface HistoryEntry {
   applicationId: string;
   date: Date;
   grossValue: number;
+  netValue: number;
 }
