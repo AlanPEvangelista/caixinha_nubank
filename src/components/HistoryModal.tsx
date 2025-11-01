@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, PlusCircle } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
@@ -27,9 +27,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "./ui/dialog";
-import { useState } from "react";
+import { useEffect } from "react";
+import { HistoryEntry } from "@/types";
 
 const formSchema = z.object({
   grossValue: z.coerce.number().positive({
@@ -43,42 +43,61 @@ const formSchema = z.object({
   }),
 });
 
+export type HistoryFormValues = z.infer<typeof formSchema>;
+
 type HistoryModalProps = {
-  applicationId: string;
-  onSubmit: (values: z.infer<typeof formSchema> & { applicationId: string }) => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  onSubmit: (values: HistoryFormValues) => void;
+  entryToEdit?: HistoryEntry | null;
 };
 
-export function HistoryModal({ applicationId, onSubmit }: HistoryModalProps) {
-  const [open, setOpen] = useState(false);
-  const form = useForm<z.infer<typeof formSchema>>({
+export function HistoryModal({
+  isOpen,
+  setIsOpen,
+  onSubmit,
+  entryToEdit,
+}: HistoryModalProps) {
+  const isEditing = !!entryToEdit;
+
+  const form = useForm<HistoryFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      grossValue: 0,
-      netValue: 0,
-      date: new Date(),
-    },
   });
 
-  const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({ ...values, applicationId });
-    form.reset();
-    setOpen(false);
+  useEffect(() => {
+    if (entryToEdit) {
+      form.reset({
+        grossValue: entryToEdit.grossValue,
+        netValue: entryToEdit.netValue,
+        date: entryToEdit.date,
+      });
+    } else {
+      form.reset({
+        grossValue: 0,
+        netValue: 0,
+        date: new Date(),
+      });
+    }
+  }, [entryToEdit, form, isOpen]);
+
+  const handleFormSubmit = (values: HistoryFormValues) => {
+    onSubmit(values);
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Registro
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Adicionar Registro de Valor</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar Registro" : "Adicionar Registro de Valor"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
+          <form
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="space-y-8"
+          >
             <FormField
               control={form.control}
               name="grossValue"
@@ -86,7 +105,7 @@ export function HistoryModal({ applicationId, onSubmit }: HistoryModalProps) {
                 <FormItem>
                   <FormLabel>Valor Bruto (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="1050.00" {...field} />
+                    <Input type="number" step="0.01" placeholder="1050.00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -99,7 +118,7 @@ export function HistoryModal({ applicationId, onSubmit }: HistoryModalProps) {
                 <FormItem>
                   <FormLabel>Valor Líquido (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="1025.00" {...field} />
+                    <Input type="number" step="0.01" placeholder="1025.00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,7 +165,9 @@ export function HistoryModal({ applicationId, onSubmit }: HistoryModalProps) {
                 </FormItem>
               )}
             />
-            <Button type="submit">Salvar Registro</Button>
+            <Button type="submit">
+              {isEditing ? "Salvar Alterações" : "Salvar Registro"}
+            </Button>
           </form>
         </Form>
       </DialogContent>

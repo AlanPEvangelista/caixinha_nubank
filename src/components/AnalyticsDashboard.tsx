@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Application, HistoryEntry } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { DateRange } from "react-day-picker";
-import { addDays, subDays, format } from "date-fns";
+import { subDays, format } from "date-fns";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { CalendarIcon, TrendingUp } from "lucide-react";
@@ -126,9 +126,9 @@ export function AnalyticsDashboard({
   }, [history, selectedAppId]);
 
   return (
-    <Card>
+    <Card className="shadow-lg border-indigo-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-indigo-700">
           <TrendingUp />
           Relatórios de Performance
         </CardTitle>
@@ -140,7 +140,7 @@ export function AnalyticsDashboard({
               <CardTitle>Ganho na Semana</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-emerald-600">
                 {totalWeeklyPercentage.toFixed(2)}%
               </p>
             </CardContent>
@@ -150,7 +150,7 @@ export function AnalyticsDashboard({
               <CardTitle>Ganho no Mês</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-emerald-600">
                 {totalMonthlyPercentage.toFixed(2)}%
               </p>
             </CardContent>
@@ -160,7 +160,7 @@ export function AnalyticsDashboard({
               <CardTitle>Ganho no Período</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-emerald-600">
                 {totalCustomPercentage.toFixed(2)}%
               </p>
             </CardContent>
@@ -245,7 +245,8 @@ export function AnalyticsDashboard({
                 <Line
                   type="monotone"
                   dataKey="valor"
-                  stroke="#8884d8"
+                  stroke="#4f46e5"
+                  strokeWidth={2}
                   activeDot={{ r: 8 }}
                 />
               </LineChart>
