@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Header } from "@/components/Header";
 import { ApplicationForm } from "@/components/ApplicationForm";
@@ -23,10 +22,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 const Index = () => {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [applications, setApplications] = useLocalStorage<Application[]>(
+    "applications",
+    []
+  );
+  const [history, setHistory] = useLocalStorage<HistoryEntry[]>("history", []);
 
   const handleAddApplication = (values: {
     name: string;
