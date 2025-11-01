@@ -1,28 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Header } from "@/components/Header";
 import { ApplicationForm, ApplicationFormValues } from "@/components/ApplicationForm";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { Application, HistoryEntry } from "@/types";
 import { showSuccess } from "@/utils/toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { HistoryModal, HistoryFormValues } from "@/components/HistoryModal";
-import { AddHistoryEntryModal, AddHistoryFormValues } from "@/components/AddHistoryEntryModal";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,44 +16,58 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { MoreVertical, PlusCircle, Pencil, Trash2, TrendingUp, ArrowDown, ArrowUp } from "lucide-react";
-import { format } from "date-fns";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ApplicationSelector } from "@/components/ApplicationSelector";
+import { ApplicationDetail } from "@/components/ApplicationDetail";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Index = () => {
   const [applications, setApplications] = useLocalStorage<Application[]>("applications", []);
   const [history, setHistory] = useLocalStorage<HistoryEntry[]>("history", []);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   // State for modals
+  const [isAppFormOpen, setIsAppFormOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Application | null>(null);
+  
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [editingHistory, setEditingHistory] = useState<HistoryEntry | null>(null);
-  const [isEditHistoryModalOpen, setIsEditHistoryModalOpen] = useState(false);
-  const [isAddHistoryModalOpen, setIsAddHistoryModalOpen] = useState(false);
+  
   const [itemToDelete, setItemToDelete] = useState<{ type: 'app' | 'history'; id: string } | null>(null);
 
-  // --- Application Handlers ---
-  const handleAddApplication = (values: ApplicationFormValues) => {
-    const newApplication: Application = { id: crypto.randomUUID(), ...values };
-    setApplications((prev) => [...prev, newApplication]);
-    showSuccess("Aplicação adicionada com sucesso!");
-  };
+  // Automatically select the first application on load or when the list changes
+  useEffect(() => {
+    if (!selectedApp && applications.length > 0) {
+      setSelectedApp(applications[0]);
+    } else if (selectedApp && !applications.find(app => app.id === selectedApp.id)) {
+      // If selected app was deleted, select the first one remaining
+      setSelectedApp(applications.length > 0 ? applications[0] : null);
+    }
+  }, [applications, selectedApp]);
 
-  const handleUpdateApplication = (values: ApplicationFormValues) => {
-    if (!editingApp) return;
-    setApplications((prev) =>
-      prev.map((app) => (app.id === editingApp.id ? { ...app, ...values } : app))
-    );
-    showSuccess("Aplicação atualizada!");
-    setEditingApp(null);
+  const selectedAppHistory = useMemo(() => {
+    if (!selectedApp) return [];
+    return history
+      .filter((h) => h.applicationId === selectedApp.id)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [history, selectedApp]);
+
+  // --- Application Handlers ---
+  const handleAppFormSubmit = (values: ApplicationFormValues) => {
+    if (editingApp) {
+      setApplications((prev) =>
+        prev.map((app) => (app.id === editingApp.id ? { ...app, ...values } : app))
+      );
+      setSelectedApp(prev => prev ? { ...prev, ...values } : null);
+      showSuccess("Aplicação atualizada!");
+    } else {
+      const newApplication: Application = { id: crypto.randomUUID(), ...values };
+      setApplications((prev) => [...prev, newApplication]);
+      if (!selectedApp) setSelectedApp(newApplication);
+      showSuccess("Aplicação adicionada!");
+    }
+    closeAppForm();
   };
 
   const handleDeleteApplication = (id: string) => {
@@ -80,23 +77,22 @@ const Index = () => {
   };
 
   // --- History Handlers ---
-  const handleAddHistorySubmit = (values: AddHistoryFormValues) => {
-    const newHistoryEntry: HistoryEntry = {
-      id: crypto.randomUUID(),
-      ...values,
-    };
-    setHistory((prev) => [...prev, newHistoryEntry]);
-    showSuccess("Lançamento adicionado!");
-    setIsAddHistoryModalOpen(false);
-  };
-
-  const handleUpdateHistorySubmit = (values: HistoryFormValues) => {
-    if (!editingHistory) return;
-    setHistory((prev) =>
-      prev.map((h) => (h.id === editingHistory.id ? { ...editingHistory, ...values } : h))
-    );
-    showSuccess("Lançamento atualizado!");
-    closeEditHistoryModal();
+  const handleHistorySubmit = (values: HistoryFormValues) => {
+    if (editingHistory) {
+      setHistory((prev) =>
+        prev.map((h) => (h.id === editingHistory.id ? { ...editingHistory, ...values } : h))
+      );
+      showSuccess("Lançamento atualizado!");
+    } else if (selectedApp) {
+      const newHistoryEntry: HistoryEntry = {
+        id: crypto.randomUUID(),
+        applicationId: selectedApp.id,
+        ...values,
+      };
+      setHistory((prev) => [...prev, newHistoryEntry]);
+      showSuccess("Lançamento adicionado!");
+    }
+    closeHistoryModal();
   };
 
   const handleDeleteHistory = (id: string) => {
@@ -105,13 +101,35 @@ const Index = () => {
   };
 
   // --- Modal Control ---
-  const openEditHistoryModal = (entry: HistoryEntry) => {
-    setEditingHistory(entry);
-    setIsEditHistoryModalOpen(true);
+  const openAppFormForNew = () => {
+    setEditingApp(null);
+    setIsAppFormOpen(true);
   };
 
-  const closeEditHistoryModal = () => {
-    setIsEditHistoryModalOpen(false);
+  const openAppFormForEdit = () => {
+    if (selectedApp) {
+      setEditingApp(selectedApp);
+      setIsAppFormOpen(true);
+    }
+  };
+  
+  const closeAppForm = () => {
+    setIsAppFormOpen(false);
+    setEditingApp(null);
+  };
+
+  const openHistoryModalForNew = () => {
+    setEditingHistory(null);
+    setIsHistoryModalOpen(true);
+  };
+
+  const openHistoryModalForEdit = (entry: HistoryEntry) => {
+    setEditingHistory(entry);
+    setIsHistoryModalOpen(true);
+  };
+
+  const closeHistoryModal = () => {
+    setIsHistoryModalOpen(false);
     setEditingHistory(null);
   };
 
@@ -128,149 +146,62 @@ const Index = () => {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-indigo-100 text-foreground">
       <Header />
-      <main className="container mx-auto p-4 space-y-8">
-        <ApplicationForm onSubmit={handleAddApplication} />
-
-        {applications.length > 0 && (
-          <AnalyticsDashboard applications={applications} history={history} />
-        )}
-
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h2 className="text-3xl font-bold tracking-tight">Minhas Aplicações</h2>
-            {applications.length > 0 && (
-              <Button size="lg" onClick={() => setIsAddHistoryModalOpen(true)} className="bg-green-600 hover:bg-green-700 text-white shadow-lg">
-                <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Lançamento
-              </Button>
+      <main className="container mx-auto p-4">
+        <div className="grid lg:grid-cols-3 gap-6 items-start">
+          <div className="lg:col-span-1 space-y-6">
+            <ApplicationSelector
+              applications={applications}
+              selectedApp={selectedApp}
+              onSelectApp={setSelectedApp}
+              onAddNewApp={openAppFormForNew}
+            />
+          </div>
+          <div className="lg:col-span-2 space-y-6">
+            {selectedApp ? (
+              <>
+                <AnalyticsDashboard application={selectedApp} history={selectedAppHistory} />
+                <ApplicationDetail
+                  application={selectedApp}
+                  history={selectedAppHistory}
+                  onEditApp={openAppFormForEdit}
+                  onDeleteApp={() => setItemToDelete({ type: 'app', id: selectedApp.id })}
+                  onAddHistory={openHistoryModalForNew}
+                  onEditHistory={openHistoryModalForEdit}
+                  onDeleteHistory={(id) => setItemToDelete({ type: 'history', id })}
+                />
+              </>
+            ) : (
+              <Card className="shadow-lg h-96 flex items-center justify-center">
+                <CardContent className="text-center">
+                  <h3 className="text-xl font-semibold">Bem-vindo ao Nubank Tracker!</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Comece adicionando sua primeira aplicação para acompanhar seus rendimentos.
+                  </p>
+                </CardContent>
+              </Card>
             )}
           </div>
-
-          {applications.length === 0 ? (
-            <Card className="text-center p-8 shadow-lg border-indigo-200">
-              <p className="text-muted-foreground">Nenhuma aplicação adicionada ainda. Comece usando o formulário acima!</p>
-            </Card>
-          ) : (
-            <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-              {applications.map((app) => {
-                const appHistory = history
-                  .filter((h) => h.applicationId === app.id)
-                  .sort((a, b) => b.date.getTime() - a.date.getTime());
-                const latestEntry = appHistory[0];
-                const gain = latestEntry ? latestEntry.grossValue - app.initialValue : 0;
-                const gainPercentage = latestEntry ? (gain / app.initialValue) * 100 : 0;
-
-                return (
-                  <Collapsible key={app.id} className="space-y-2">
-                    <Card className="shadow-lg border-indigo-200 flex flex-col">
-                      <CardHeader className="flex-row items-start justify-between">
-                        <div>
-                          <CardTitle className="text-indigo-800">{app.name}</CardTitle>
-                          <CardDescription>
-                            Início: {format(app.startDate, "dd/MM/yyyy")}
-                          </CardDescription>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingApp(app)}><Pencil className="mr-2 h-4 w-4" />Editar Aplicação</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setItemToDelete({ type: 'app', id: app.id })} className="text-red-500"><Trash2 className="mr-2 h-4 w-4" />Excluir Aplicação</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </CardHeader>
-                      <CardContent className="flex-grow space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-center">
-                          <div className="p-2 rounded-lg bg-slate-100">
-                            <p className="text-sm text-muted-foreground">Valor Atual</p>
-                            <p className="text-xl font-bold text-indigo-700">R$ {latestEntry ? latestEntry.grossValue.toFixed(2) : app.initialValue.toFixed(2)}</p>
-                          </div>
-                          <div className="p-2 rounded-lg bg-slate-100">
-                            <p className="text-sm text-muted-foreground">Rendimento Total</p>
-                            <p className={`text-xl font-bold flex items-center justify-center gap-1 ${gain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                              {gain >= 0 ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
-                              {gainPercentage.toFixed(2)}%
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-center">
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" className="text-indigo-600">Ver Histórico</Button>
-                        </CollapsibleTrigger>
-                      </CardFooter>
-                    </Card>
-                    <CollapsibleContent>
-                      <Card className="shadow-md border-indigo-200">
-                        <CardHeader><CardTitle className="text-base">Histórico de Lançamentos</CardTitle></CardHeader>
-                        <CardContent>
-                          <div className="max-h-60 overflow-y-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Data</TableHead>
-                                  <TableHead>Bruto</TableHead>
-                                  <TableHead>Líquido</TableHead>
-                                  <TableHead className="text-right">Ações</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {appHistory.length > 0 ? (
-                                  appHistory.map((h) => (
-                                    <TableRow key={h.id}>
-                                      <TableCell>{format(h.date, "dd/MM/yy")}</TableCell>
-                                      <TableCell>R$ {h.grossValue.toFixed(2)}</TableCell>
-                                      <TableCell>R$ {h.netValue.toFixed(2)}</TableCell>
-                                      <TableCell className="text-right space-x-1">
-                                        <Button variant="ghost" size="icon" onClick={() => openEditHistoryModal(h)}><Pencil className="h-4 w-4 text-blue-600" /></Button>
-                                        <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ type: 'history', id: h.id })}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))
-                                ) : (
-                                  <TableRow>
-                                    <TableCell colSpan={5} className="text-center">Nenhum lançamento.</TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </CollapsibleContent>
-                  </Collapsible>
-                );
-              })}
-            </div>
-          )}
         </div>
       </main>
       <MadeWithDyad />
 
       {/* Modals */}
-      <Dialog open={!!editingApp} onOpenChange={(open) => !open && setEditingApp(null)}>
+      <Dialog open={isAppFormOpen} onOpenChange={closeAppForm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Editar Aplicação</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingApp ? "Editar Aplicação" : "Nova Aplicação"}</DialogTitle></DialogHeader>
           <ApplicationForm
-            onSubmit={handleUpdateApplication}
+            onSubmit={handleAppFormSubmit}
             initialData={editingApp ? { name: editingApp.name, initialValue: editingApp.initialValue, startDate: editingApp.startDate } : undefined}
-            buttonText="Salvar Alterações"
+            buttonText={editingApp ? "Salvar Alterações" : "Adicionar Aplicação"}
             isCard={false}
           />
         </DialogContent>
       </Dialog>
 
-      <AddHistoryEntryModal
-        isOpen={isAddHistoryModalOpen}
-        setIsOpen={setIsAddHistoryModalOpen}
-        onSubmit={handleAddHistorySubmit}
-        applications={applications}
-      />
-
       <HistoryModal
-        isOpen={isEditHistoryModalOpen}
-        setIsOpen={closeEditHistoryModal}
-        onSubmit={handleUpdateHistorySubmit}
+        isOpen={isHistoryModalOpen}
+        setIsOpen={closeHistoryModal}
+        onSubmit={handleHistorySubmit}
         entryToEdit={editingHistory}
       />
 
