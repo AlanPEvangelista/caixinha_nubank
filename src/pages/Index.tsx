@@ -28,12 +28,9 @@ const Index = () => {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   // State for modals
-  const [isAppFormOpen, setIsAppFormOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Application | null>(null);
-  
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [editingHistory, setEditingHistory] = useState<HistoryEntry | null>(null);
-  
   const [itemToDelete, setItemToDelete] = useState<{ type: 'app' | 'history'; id: string } | null>(null);
 
   // Automatically select the first application on load or when the list changes
@@ -41,7 +38,6 @@ const Index = () => {
     if (!selectedApp && applications.length > 0) {
       setSelectedApp(applications[0]);
     } else if (selectedApp && !applications.find(app => app.id === selectedApp.id)) {
-      // If selected app was deleted, select the first one remaining
       setSelectedApp(applications.length > 0 ? applications[0] : null);
     }
   }, [applications, selectedApp]);
@@ -54,20 +50,23 @@ const Index = () => {
   }, [history, selectedApp]);
 
   // --- Application Handlers ---
-  const handleAppFormSubmit = (values: ApplicationFormValues) => {
-    if (editingApp) {
-      setApplications((prev) =>
-        prev.map((app) => (app.id === editingApp.id ? { ...app, ...values } : app))
-      );
+  const handleAddApplication = (values: ApplicationFormValues) => {
+    const newApplication: Application = { id: crypto.randomUUID(), ...values };
+    setApplications((prev) => [...prev, newApplication]);
+    if (!selectedApp) setSelectedApp(newApplication);
+    showSuccess("Aplicação adicionada!");
+  };
+
+  const handleUpdateApplication = (values: ApplicationFormValues) => {
+    if (!editingApp) return;
+    setApplications((prev) =>
+      prev.map((app) => (app.id === editingApp.id ? { ...app, ...values } : app))
+    );
+    if (selectedApp?.id === editingApp.id) {
       setSelectedApp(prev => prev ? { ...prev, ...values } : null);
-      showSuccess("Aplicação atualizada!");
-    } else {
-      const newApplication: Application = { id: crypto.randomUUID(), ...values };
-      setApplications((prev) => [...prev, newApplication]);
-      if (!selectedApp) setSelectedApp(newApplication);
-      showSuccess("Aplicação adicionada!");
     }
-    closeAppForm();
+    showSuccess("Aplicação atualizada!");
+    setEditingApp(null);
   };
 
   const handleDeleteApplication = (id: string) => {
@@ -101,21 +100,10 @@ const Index = () => {
   };
 
   // --- Modal Control ---
-  const openAppFormForNew = () => {
-    setEditingApp(null);
-    setIsAppFormOpen(true);
-  };
-
   const openAppFormForEdit = () => {
     if (selectedApp) {
       setEditingApp(selectedApp);
-      setIsAppFormOpen(true);
     }
-  };
-  
-  const closeAppForm = () => {
-    setIsAppFormOpen(false);
-    setEditingApp(null);
   };
 
   const openHistoryModalForNew = () => {
@@ -153,13 +141,12 @@ const Index = () => {
               applications={applications}
               selectedApp={selectedApp}
               onSelectApp={setSelectedApp}
-              onAddNewApp={openAppFormForNew}
             />
+            <ApplicationForm onSubmit={handleAddApplication} />
           </div>
           <div className="lg:col-span-2 space-y-6">
             {selectedApp ? (
               <>
-                <AnalyticsDashboard application={selectedApp} history={selectedAppHistory} />
                 <ApplicationDetail
                   application={selectedApp}
                   history={selectedAppHistory}
@@ -169,6 +156,7 @@ const Index = () => {
                   onEditHistory={openHistoryModalForEdit}
                   onDeleteHistory={(id) => setItemToDelete({ type: 'history', id })}
                 />
+                <AnalyticsDashboard application={selectedApp} history={selectedAppHistory} />
               </>
             ) : (
               <Card className="shadow-lg h-96 flex items-center justify-center">
@@ -186,13 +174,13 @@ const Index = () => {
       <MadeWithDyad />
 
       {/* Modals */}
-      <Dialog open={isAppFormOpen} onOpenChange={closeAppForm}>
+      <Dialog open={!!editingApp} onOpenChange={() => setEditingApp(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editingApp ? "Editar Aplicação" : "Nova Aplicação"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Editar Aplicação</DialogTitle></DialogHeader>
           <ApplicationForm
-            onSubmit={handleAppFormSubmit}
+            onSubmit={handleUpdateApplication}
             initialData={editingApp ? { name: editingApp.name, initialValue: editingApp.initialValue, startDate: editingApp.startDate } : undefined}
-            buttonText={editingApp ? "Salvar Alterações" : "Adicionar Aplicação"}
+            buttonText="Salvar Alterações"
             isCard={false}
           />
         </DialogContent>
