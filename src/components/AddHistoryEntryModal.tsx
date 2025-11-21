@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -50,12 +51,12 @@ const formSchema = z.object({
   }),
 });
 
-export type AddHistoryFormValues = z.infer<typeof formSchema>;
+export type HistoryFormValues = z.infer<typeof formSchema>;
 
 type AddHistoryEntryModalProps = {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  onSubmit: (values: AddHistoryFormValues) => void;
+  onSubmit: (values: HistoryFormValues) => void;
   applications: Application[];
 };
 
@@ -65,16 +66,20 @@ export function AddHistoryEntryModal({
   onSubmit,
   applications,
 }: AddHistoryEntryModalProps) {
-  const form = useForm<AddHistoryFormValues>({
+  const form = useForm<HistoryFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      applicationId: "",
       grossValue: 0,
       netValue: 0,
       date: new Date(),
     },
   });
 
-  const handleFormSubmit = (values: AddHistoryFormValues) => {
+  // State to control popover open state
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+
+  const handleFormSubmit = (values: HistoryFormValues) => {
     onSubmit(values);
     form.reset();
     setIsOpen(false);
@@ -147,7 +152,7 @@ export function AddHistoryEntryModal({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Data do Lançamento</FormLabel>
-                  <Popover>
+                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -170,7 +175,11 @@ export function AddHistoryEntryModal({
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          // Close the popover after selecting a date
+                          setIsPopoverOpen(false);
+                        }}
                         disabled={(date) =>
                           date > new Date() || date < new Date("1900-01-01")
                         }

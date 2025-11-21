@@ -17,21 +17,122 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ApplicationSelector } from "@/components/ApplicationSelector";
 import { ApplicationDetail } from "@/components/ApplicationDetail";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { 
+  getApplications, 
+  createApplication, 
+  updateApplication, 
+  deleteApplication,
+  getHistoryEntries,
+  createHistoryEntry,
+  updateHistoryEntry,
+  deleteHistoryEntry
+} from "@/services/applicationService";
 
 const Index = () => {
-  const [applications, setApplications] = useLocalStorage<Application[]>("applications", []);
-  const [history, setHistory] = useLocalStorage<HistoryEntry[]>("history", []);
+  const { userId } = useAuth();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [selectedDashboardAppId, setSelectedDashboardAppId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // State for modals
   const [editingApp, setEditingApp] = useState<Application | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [editingHistory, setEditingHistory] = useState<HistoryEntry | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'app' | 'history'; id: string } | null>(null);
+
+  // Load data when user ID changes
+  useEffect(() => {
+    if (userId) {
+      loadData();
+    }
+  }, [userId]);
+
+  const loadData = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    try {
+      // Load applications
+      const apps = await getApplications(userId);
+      
+      // Validate and clean up application data
+      const validApps = apps.filter(app => {
+        // Check if the application has required properties
+        if (!app.id || !app.name) {
+          console.warn("Invalid application data received:", app);
+          return false;
+        }
+        // Ensure startDate is a valid Date object
+        if (!(app.startDate instanceof Date) && app.startDate) {
+          // Try to parse if it's a string
+          if (typeof app.startDate === 'string') {
+            const parsedDate = new Date(app.startDate);
+            if (!isNaN(parsedDate.getTime())) {
+              app.startDate = parsedDate;
+            } else {
+              console.warn("Invalid date format for application:", app);
+              return false;
+            }
+          } else {
+            console.warn("Invalid startDate type for application:", app);
+            return false;
+          }
+        }
+        return true;
+      });
+      
+      setApplications(validApps);
+      
+      // If we have applications, load history for all of them
+      if (validApps.length > 0) {
+        const allHistory: HistoryEntry[] = [];
+        for (const app of validApps) {
+          try {
+            const appHistory = await getHistoryEntries(app.id, userId);
+            // Validate history entries
+            const validHistory = appHistory.filter(entry => {
+              if (!entry.id || !entry.applicationId) {
+                console.warn("Invalid history entry data received:", entry);
+                return false;
+              }
+              // Ensure date is a valid Date object
+              if (!(entry.date instanceof Date) && entry.date) {
+                if (typeof entry.date === 'string') {
+                  const parsedDate = new Date(entry.date);
+                  if (!isNaN(parsedDate.getTime())) {
+                    entry.date = parsedDate;
+                  } else {
+                    console.warn("Invalid date format for history entry:", entry);
+                    return false;
+                  }
+                } else {
+                  console.warn("Invalid date type for history entry:", entry);
+                  return false;
+                }
+              }
+              return true;
+            });
+            allHistory.push(...validHistory);
+          } catch (historyError) {
+            console.error(`Error loading history for application ${app.id}:`, historyError);
+          }
+        }
+        setHistory(allHistory);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      // Show error to user
+      // You might want to add a toast notification here
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Automatically select the first application on load or when the list changes
   useEffect(() => {
@@ -46,57 +147,126 @@ const Index = () => {
     if (!selectedApp) return [];
     return history
       .filter((h) => h.applicationId === selectedApp.id)
-      .sort((a, b) => b.date.getTime() - a.date.getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [history, selectedApp]);
 
   // --- Application Handlers ---
-  const handleAddApplication = (values: ApplicationFormValues) => {
-    const newApplication: Application = { id: crypto.randomUUID(), ...values };
-    setApplications((prev) => [...prev, newApplication]);
-    if (!selectedApp) setSelectedApp(newApplication);
-    showSuccess("Aplicação adicionada!");
-  };
-
-  const handleUpdateApplication = (values: ApplicationFormValues) => {
-    if (!editingApp) return;
-    setApplications((prev) =>
-      prev.map((app) => (app.id === editingApp.id ? { ...app, ...values } : app))
-    );
-    if (selectedApp?.id === editingApp.id) {
-      setSelectedApp(prev => prev ? { ...prev, ...values } : null);
+  const handleAddApplication = async (values: ApplicationFormValues) => {
+    if (!userId) return;
+    
+    try {
+      const newApplication: Application = { 
+        id: crypto.randomUUID(), 
+        name: values.name,
+        initialValue: values.initialValue,
+        startDate: values.startDate
+      };
+      
+      await createApplication(
+        newApplication,
+        userId
+      );
+      
+      setApplications((prev) => [...prev, newApplication]);
+      if (!selectedApp) setSelectedApp(newApplication);
+      showSuccess("Aplicação adicionada!");
+    } catch (error) {
+      console.error("Error adding application:", error);
     }
-    showSuccess("Aplicação atualizada!");
-    setEditingApp(null);
   };
 
-  const handleDeleteApplication = (id: string) => {
-    setApplications((prev) => prev.filter((app) => app.id !== id));
-    setHistory((prev) => prev.filter((h) => h.applicationId !== id));
-    showSuccess("Aplicação e seu histórico foram removidos.");
+  const handleUpdateApplication = async (values: ApplicationFormValues) => {
+    if (!editingApp || !userId) return;
+    
+    try {
+      const updatedApp: Application = { 
+        id: editingApp.id, 
+        name: values.name,
+        initialValue: values.initialValue,
+        startDate: values.startDate
+      };
+      
+      await updateApplication(updatedApp, userId);
+      
+      setApplications((prev) =>
+        prev.map((app) => (app.id === editingApp.id ? updatedApp : app))
+      );
+      
+      if (selectedApp?.id === editingApp.id) {
+        setSelectedApp(updatedApp);
+      }
+      
+      showSuccess("Aplicação atualizada!");
+      setEditingApp(null);
+    } catch (error) {
+      console.error("Error updating application:", error);
+    }
+  };
+
+  const handleDeleteApplication = async (id: string) => {
+    if (!userId) return;
+    
+    try {
+      await deleteApplication(id, userId);
+      setApplications((prev) => prev.filter((app) => app.id !== id));
+      setHistory((prev) => prev.filter((h) => h.applicationId !== id));
+      showSuccess("Aplicação e seu histórico foram removidos.");
+    } catch (error) {
+      console.error("Error deleting application:", error);
+    }
   };
 
   // --- History Handlers ---
-  const handleHistorySubmit = (values: HistoryFormValues) => {
-    if (editingHistory) {
-      setHistory((prev) =>
-        prev.map((h) => (h.id === editingHistory.id ? { ...editingHistory, ...values } : h))
-      );
-      showSuccess("Lançamento atualizado!");
-    } else if (selectedApp) {
-      const newHistoryEntry: HistoryEntry = {
-        id: crypto.randomUUID(),
-        applicationId: selectedApp.id,
-        ...values,
-      };
-      setHistory((prev) => [...prev, newHistoryEntry]);
-      showSuccess("Lançamento adicionado!");
+  const handleHistorySubmit = async (values: HistoryFormValues) => {
+    if (!userId || !selectedApp) return;
+    
+    try {
+      if (editingHistory) {
+        const updatedHistory: HistoryEntry = { 
+          id: editingHistory.id, 
+          applicationId: editingHistory.applicationId,
+          date: values.date,
+          grossValue: values.grossValue,
+          netValue: values.netValue
+        };
+        
+        await updateHistoryEntry(updatedHistory, userId);
+        
+        setHistory((prev) =>
+          prev.map((h) => (h.id === editingHistory.id ? updatedHistory : h))
+        );
+        
+        showSuccess("Lançamento atualizado!");
+      } else {
+        const newHistoryEntry: HistoryEntry = {
+          id: crypto.randomUUID(),
+          applicationId: selectedApp.id,
+          date: values.date,
+          grossValue: values.grossValue,
+          netValue: values.netValue
+        };
+        
+        await createHistoryEntry(newHistoryEntry, userId);
+        setHistory((prev) => [...prev, newHistoryEntry]);
+        showSuccess("Lançamento adicionado!");
+      }
+      
+      closeHistoryModal();
+    } catch (error) {
+      console.error("Error handling history:", error);
     }
-    closeHistoryModal();
   };
 
-  const handleDeleteHistory = (id: string) => {
-    setHistory((prev) => prev.filter((h) => h.id !== id));
-    showSuccess("Lançamento removido.");
+  const handleDeleteHistory = async (id: string) => {
+    if (!userId) return;
+    
+    try {
+      await deleteHistoryEntry(id, userId);
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+      showSuccess("Lançamento removido.");
+    } catch (error) {
+      console.error("Error deleting history:", error);
+    }
   };
 
   // --- Modal Control ---
@@ -131,8 +301,16 @@ const Index = () => {
     setItemToDelete(null);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-indigo-100 flex items-center justify-center">
+        <div>Carregando...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-indigo-100 text-foreground">
+    <div className="min-h-screen w-full bg-gradient-to-br from-purple-100 to-indigo-200 text-foreground">
       <Header />
       <main className="container mx-auto p-4">
         <div className="grid lg:grid-cols-3 gap-6 items-start">
@@ -156,7 +334,12 @@ const Index = () => {
                   onEditHistory={openHistoryModalForEdit}
                   onDeleteHistory={(id) => setItemToDelete({ type: 'history', id })}
                 />
-                <AnalyticsDashboard application={selectedApp} history={selectedAppHistory} />
+                <AnalyticsDashboard
+                  applications={applications}
+                  history={history}
+                  selectedAppId={selectedDashboardAppId || selectedApp?.id || undefined}
+                  onAppSelect={(appId) => setSelectedDashboardAppId(appId)}
+                />
               </>
             ) : (
               <Card className="shadow-lg h-96 flex items-center justify-center">
@@ -191,6 +374,7 @@ const Index = () => {
         setIsOpen={closeHistoryModal}
         onSubmit={handleHistorySubmit}
         entryToEdit={editingHistory}
+        applicationHistory={selectedAppHistory} // Pass the application history
       />
 
       <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>

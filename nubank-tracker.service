@@ -1,0 +1,16 @@
+[Unit]
+Description=Nubank Tracker Application
+After=network.target
+
+[Service]
+Type=simple
+User=alan
+WorkingDirectory=/home/alan/caixinha_nubank
+ExecStart=/home/alan/caixinha_nubank/start.sh
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target

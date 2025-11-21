@@ -1,0 +1,116 @@
+// API base URL - in development, this should point to the Express server
+const API_BASE_URL = 'http://localhost:3000/api';
+
+/**
+ * Hash a password
+ * @param password The password to hash
+ * @returns The hashed password
+ */
+async function hashPassword(password: string): Promise<string> {
+  // Simple hashing for demo purposes - in production, use bcrypt
+  return btoa(password); // Base64 encoding for demo
+}
+
+/**
+ * Compare a password with a hash
+ * @param password The password to check
+ * @param hash The hash to compare against
+ * @returns Whether the password matches the hash
+ */
+async function comparePassword(password: string, hash: string): Promise<boolean> {
+  // Simple comparison for demo purposes - in production, use bcrypt
+  return btoa(password) === hash;
+}
+
+/**
+ * Create a new user
+ * @param username The username
+ * @param password The password
+ * @returns The created user ID
+ */
+export async function createUser(username: string, password: string): Promise<number> {
+  try {
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
+    
+    // Make API call to create user
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        password: hashedPassword
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create user');
+    }
+    
+    const userData = await response.json();
+    return userData.id;
+  } catch (error) {
+    // Re-throw the error so it can be handled by the calling function
+    throw error;
+  }
+}
+
+/**
+ * Authenticate a user
+ * @param username The username
+ * @param password The password
+ * @returns The user ID if authentication is successful, null otherwise
+ */
+export async function authenticateUser(username: string, password: string): Promise<number | null> {
+  try {
+    // Hash the password for comparison
+    const hashedPassword = await hashPassword(password);
+    
+    // Make API call to authenticate user
+    const response = await fetch(`${API_BASE_URL}/auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        password: hashedPassword
+      })
+    });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const userData = await response.json();
+    return userData.id;
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return null;
+  }
+}
+
+/**
+ * Get a user by ID
+ * @param id The user ID
+ * @returns The user object or null if not found
+ */
+export async function getUserById(id: number): Promise<{ id: number; username: string } | null> {
+  try {
+    // Make API call to get user
+    const response = await fetch(`${API_BASE_URL}/users/${id}`);
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const userData = await response.json();
+    return userData;
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    return null;
+  }
+}
