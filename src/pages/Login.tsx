@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { authenticateUser, createUser } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
-import { testDatabase, clearDatabase } from "@/services/database";
-import { DatabaseManager } from "@/components/DatabaseManager";
 
 export function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -83,50 +81,16 @@ export function Login() {
     }
   };
 
-  const handleTestDatabase = async () => {
-    try {
-      const result = await testDatabase();
-      if (result) {
-        toast({
-          title: "Sucesso",
-          description: "Teste de banco de dados concluído com sucesso!",
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: "Teste de banco de dados falhou",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao testar o banco de dados",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleClearDatabase = async () => {
-    try {
-      await clearDatabase();
-      toast({
-        title: "Sucesso",
-        description: "Banco de dados limpo com sucesso!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao limpar o banco de dados",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="items-center">
+          <img 
+            src="/nubank.jpg" 
+            alt="Nubank Logo" 
+            className="w-32 h-32 object-contain mb-4"
+          />
           <CardTitle>{isLogin ? "Login" : "Criar Conta"}</CardTitle>
           <CardDescription>
             {isLogin ? "Entre na sua conta" : "Crie uma nova conta"}
@@ -169,25 +133,6 @@ export function Login() {
             >
               {isLogin ? "Não tem uma conta? Criar conta" : "Já tem uma conta? Fazer login"}
             </Button>
-            <div className="flex gap-2 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestDatabase}
-                className="flex-1"
-              >
-                Testar Banco
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClearDatabase}
-                className="flex-1"
-              >
-                Limpar Banco
-              </Button>
-            </div>
-            <DatabaseManager />
           </CardFooter>
         </form>
       </Card>

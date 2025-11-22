@@ -1,4 +1,4 @@
-import { PiggyBank, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -22,8 +22,12 @@ export function Header() {
     <header className="w-full bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto flex items-center justify-between gap-4 p-4">
         <div className="flex items-center gap-4">
-          <PiggyBank className="h-10 w-10" />
-          <h1 className="text-3xl font-bold tracking-tight">Nubank Tracker</h1>
+          <img 
+            src="/nubank.jpg" 
+            alt="Nubank Logo" 
+            className="h-10 w-10 object-contain"
+          />
+          <h1 className="text-3xl font-bold tracking-tight">Nubank (Caixinhas)</h1>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
