@@ -7,8 +7,8 @@ const API_BASE_URL = 'http://localhost:3000/api';
  * @returns The hashed password
  */
 async function hashPassword(password: string): Promise<string> {
-  // Simple hashing for demo purposes - in production, use bcrypt
-  return btoa(password); // Base64 encoding for demo
+  // No hashing for direct password comparison with backend
+  return password;
 }
 
 /**
@@ -18,8 +18,8 @@ async function hashPassword(password: string): Promise<string> {
  * @returns Whether the password matches the hash
  */
 async function comparePassword(password: string, hash: string): Promise<boolean> {
-  // Simple comparison for demo purposes - in production, use bcrypt
-  return btoa(password) === hash;
+  // Direct comparison without base64 encoding
+  return password === hash;
 }
 
 /**
