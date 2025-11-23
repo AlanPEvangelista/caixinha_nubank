@@ -34,13 +34,13 @@ app.post('/api/users', (req, res) => {
   const { username, password } = req.body;
   
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+    return res.status(400).json({ error: 'Usuario e senha são obrigatórios' });
   }
   
   db.createUser(username, password, (err, userId) => {
     if (err) {
       if (err.message.includes('UNIQUE constraint failed')) {
-        return res.status(409).json({ error: 'User already exists' });
+        return res.status(409).json({ error: 'usuário já existe' });
       }
       return res.status(500).json({ error: 'Failed to create user' });
     }

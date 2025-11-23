@@ -1,3 +1,4 @@
+*.db
 # Logs
 logs
 *.log
@@ -7,11 +8,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+data
 node_modules
 dist
 dist-ssr
-*.local
 
+*.local
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.db
+.env
+.env.local
