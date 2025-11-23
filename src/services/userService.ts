@@ -1,5 +1,5 @@
 // API base URL - in development, this should point to the Express server
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3002/api';
 
 /**
  * Hash a password

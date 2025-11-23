@@ -6,5 +6,5 @@
 echo "Starting Nubank Tracker Application..."
 
 # Start the server
-echo "Starting the server on port 3000..."
+echo "Starting the server on port 3002..."
 node scripts/server.js

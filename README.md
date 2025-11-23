@@ -34,7 +34,7 @@ To build and serve the application in production mode:
    npm run server
    ```
 
-This will start the Express server on http://localhost:3000
+This will start the Express server on http://localhost:3002
 
 ## Deployment
 

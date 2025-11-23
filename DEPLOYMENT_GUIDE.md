@@ -146,11 +146,11 @@ sudo systemctl status nubank-tracker
 
 ## Passo 7: Configurar o Firewall (se aplicável)
 
-Se você tiver um firewall habilitado, permita o tráfego na porta 3000 (porta padrão do servidor):
+Se você tiver um firewall habilitado, permita o tráfego na porta 3002 (porta padrão do servidor):
 
 ```bash
 # Executar em qualquer pasta
-sudo ufw allow 3000/tcp
+sudo ufw allow 3002/tcp
 ```
 
 ## Passo 8: Acessar o Aplicativo
@@ -158,7 +158,7 @@ sudo ufw allow 3000/tcp
 Abra um navegador web e navegue para:
 
 ```
-http://192.168.100.117:3000
+http://192.168.100.117:3002
 ```
 
 ## Manutenção
