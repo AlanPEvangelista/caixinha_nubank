@@ -20,20 +20,20 @@ export function Header() {
 
   return (
     <header className="w-full bg-primary text-primary-foreground shadow-md">
-      <div className="container mx-auto flex items-center justify-between gap-4 p-4">
+      <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
         <div className="flex items-center gap-4">
           <img 
             src="/nubank.jpg" 
             alt="Nubank Logo" 
             className="h-10 w-10 object-contain"
           />
-          <h1 className="text-3xl font-bold tracking-tight">Nubank (Caixinhas)</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center sm:text-left">Nubank (Caixinhas)</h1>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button variant="secondary" size="sm" onClick={handleLogout} className="flex items-center gap-2">
             <LogOut className="h-4 w-4" />
-            Sair
+            <span className="hidden sm:inline">Sair</span>
           </Button>
         </div>
       </div>

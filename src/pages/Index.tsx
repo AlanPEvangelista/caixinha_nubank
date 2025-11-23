@@ -313,7 +313,7 @@ const Index = () => {
     <div className="min-h-screen w-full bg-gradient-to-br from-purple-100 to-indigo-200 text-foreground">
       <Header />
       <main className="container mx-auto p-4">
-        <div className="grid lg:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-1 space-y-6">
             <ApplicationSelector
               applications={applications}

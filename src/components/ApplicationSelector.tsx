@@ -74,7 +74,7 @@ export function ApplicationSelector({
                   key={app.id} 
                   value={app.id}
                 >
-                  {app.name}
+                  <div className="truncate max-w-[200px]">{app.name}</div>
                 </SelectItem>
               ))}
             </SelectContent>

@@ -166,9 +166,9 @@ export function AnalyticsDashboard({
               : "Performance Geral de Todas as Aplicações"}
           </CardTitle>
           
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <Select value={viewMode} onValueChange={(value: "single" | "all") => setViewMode(value)}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Modo de visualização" />
               </SelectTrigger>
               <SelectContent>
@@ -182,7 +182,7 @@ export function AnalyticsDashboard({
                 value={selectedApplication?.id || ""} 
                 onValueChange={(value) => onAppSelect?.(value)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Selecione uma aplicação" />
                 </SelectTrigger>
                 <SelectContent>
@@ -201,13 +201,13 @@ export function AnalyticsDashboard({
       <CardContent className="space-y-6">
         {viewMode === "single" ? (
           <>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Valor Atual (Bruto)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-purple-700">
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-700">
                     R$ {singleAppMetrics.latestEntry ? singleAppMetrics.latestEntry.grossValue.toFixed(2) : (selectedApplication?.initialValue.toFixed(2) || "0.00")}
                   </p>
                 </CardContent>
@@ -217,17 +217,17 @@ export function AnalyticsDashboard({
                   <CardTitle>Valor Atual (Líquido)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-purple-700">
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-700">
                     R$ {singleAppMetrics.latestEntry ? singleAppMetrics.latestEntry.netValue.toFixed(2) : (selectedApplication?.initialValue.toFixed(2) || "0.00")}
                   </p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="sm:col-span-2 lg:col-span-1">
                 <CardHeader>
                   <CardTitle>Rendimento Total</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className={`text-3xl font-bold flex items-center gap-2 ${singleAppMetrics.gain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <p className={`text-2xl sm:text-3xl font-bold flex items-center gap-2 ${singleAppMetrics.gain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {singleAppMetrics.gain >= 0 ? <ArrowUp /> : <ArrowDown />}
                     {singleAppMetrics.gainPercentage.toFixed(2)}%
                   </p>
@@ -237,7 +237,7 @@ export function AnalyticsDashboard({
             
             <div>
               <h3 className="font-semibold mb-2 text-lg">Gráfico de Evolução</h3>
-              <div className="h-[400px] mt-4">
+              <div className="h-[300px] sm:h-[400px] mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={singleAppChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -276,13 +276,13 @@ export function AnalyticsDashboard({
           </>
         ) : (
           <>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Valor Total Atual (Bruto)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-purple-700">
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-700">
                     R$ {allAppsMetrics.totalCurrent.toFixed(2)}
                   </p>
                 </CardContent>
@@ -292,17 +292,17 @@ export function AnalyticsDashboard({
                   <CardTitle>Valor Total Atual (Líquido)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-purple-700">
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-700">
                     R$ {allAppsMetrics.totalNetValue.toFixed(2)}
                   </p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="sm:col-span-2 lg:col-span-1">
                 <CardHeader>
                   <CardTitle>Rendimento Total</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className={`text-3xl font-bold flex items-center gap-2 ${allAppsMetrics.totalGain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <p className={`text-2xl sm:text-3xl font-bold flex items-center gap-2 ${allAppsMetrics.totalGain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {allAppsMetrics.totalGain >= 0 ? <ArrowUp /> : <ArrowDown />}
                     {allAppsMetrics.totalGainPercentage.toFixed(2)}%
                   </p>
@@ -312,7 +312,7 @@ export function AnalyticsDashboard({
             
             <div>
               <h3 className="font-semibold mb-2 text-lg">Gráfico de Evolução Geral</h3>
-              <div className="h-[400px] mt-4">
+              <div className="h-[300px] sm:h-[400px] mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={allAppsChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
