@@ -1,5 +1,8 @@
 // API base URL - in development, this should point to the Express server
-const API_BASE_URL = 'http://localhost:3002/api';
+// In production, this should point to the same origin
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+  ? '/api'  // Relative path for production
+  : 'http://localhost:3002/api';  // Absolute path for development
 
 /**
  * Create a new application

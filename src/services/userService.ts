@@ -1,5 +1,8 @@
 // API base URL - in development, this should point to the Express server
-const API_BASE_URL = 'http://localhost:3002/api';
+// In production, this should point to the same origin
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+  ? '/api'  // Relative path for production
+  : 'http://localhost:3002/api';  // Absolute path for development
 
 /**
  * Hash a password
@@ -66,8 +69,10 @@ export async function createUser(username: string, password: string): Promise<nu
  */
 export async function authenticateUser(username: string, password: string): Promise<number | null> {
   try {
+    console.log('Attempting to authenticate user:', username);
     // Hash the password for comparison
     const hashedPassword = await hashPassword(password);
+    console.log('Sending authentication request with username:', username, 'and password:', hashedPassword);
     
     // Make API call to authenticate user
     const response = await fetch(`${API_BASE_URL}/auth`, {
@@ -81,11 +86,15 @@ export async function authenticateUser(username: string, password: string): Prom
       })
     });
     
+    console.log('Authentication response status:', response.status);
     if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Authentication failed with error:', errorData);
       return null;
     }
     
     const userData = await response.json();
+    console.log('Authentication successful for user ID:', userData.id);
     return userData.id;
   } catch (error) {
     console.error("Authentication error:", error);

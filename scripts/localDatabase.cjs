@@ -20,11 +20,12 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database
+console.log('Attempting to connect to database at:', DB_PATH);
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
   } else {
-    console.log('Connected to the SQLite database.');
+    console.log('Connected to the SQLite database at:', DB_PATH);
     initializeTables();
   }
 });
@@ -100,16 +101,24 @@ function createUser(username, password, callback) {
 }
 
 function authenticateUser(username, password, callback) {
+  console.log('Attempting to authenticate user:', username);
   const stmt = db.prepare('SELECT id, password FROM users WHERE username = ?');
   stmt.get(username, (err, row) => {
     if (err) {
+      console.error('Database error during authentication:', err);
       callback(err, null);
     } else if (!row) {
+      console.log('User not found in database:', username);
       callback(null, null); // User not found
-    } else if (row.password !== password) {
-      callback(null, null); // Password mismatch
     } else {
-      callback(null, row.id); // Success
+      console.log('User found, checking password. Stored password:', row.password, 'Provided password:', password);
+      if (row.password !== password) {
+        console.log('Password mismatch for user:', username);
+        callback(null, null); // Password mismatch
+      } else {
+        console.log('Authentication successful for user:', username);
+        callback(null, row.id); // Success
+      }
     }
   });
   stmt.finalize();
